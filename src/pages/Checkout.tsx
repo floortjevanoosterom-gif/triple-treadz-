@@ -4,945 +4,995 @@ import { useTranslation } from '../lib/i18n';
 import { PRICE, getShippingCost, FREE_FROM, COUNTRIES } from '../lib/data';
 
 export default function Checkout() {
-const { lang, cart, clearCart } = useStore();
-const t = useTranslation(lang);
+  const { lang, cart, clearCart } = useStore();
+  const t = useTranslation(lang);
 
-const [formData, setFormData] = useState({
-firstName: '',
-lastName: '',
-email: '',
-phone: '',
-street: '',
-houseNumber: '',
-postalCode: '',
-city: '',
-country: 'Nederland',
-method: 'ideal',
-notes: ''
-});
-
-const [errors, setErrors] = useState<Record<string, string>>({});
-const [loading, setLoading] = useState(false);
-const [attemptedSubmit, setAttemptedSubmit] = useState(false);
-const [orderPlaced, setOrderPlaced] = useState(false);
-const [orderNumber, setOrderNumber] = useState('');
-
-const shoePairs = cart
-.filter((c) => c.type === 'shoe')
-.reduce((a, c) => a + c.qty, 0);
-
-const subtotal = cart.reduce((a, c) => a + c.price * c.qty, 0);
-const shipCost =
-shoePairs >= FREE_FROM
-? 0
-: getShippingCost(formData.country);
-
-const total = subtotal + shipCost;
-
-useEffect(() => {
-window.scrollTo(0, 0);
-}, [orderPlaced]);
-
-const validate = () => {
-const newErrors: Record<string, string> = {};
-
-if (!formData.firstName.trim()) {
-  newErrors.firstName = t('err_first') || 'Verplicht';
-}
-
-if (!formData.lastName.trim()) {
-  newErrors.lastName = t('err_last') || 'Verplicht';
-}
-
-if (!formData.email.trim()) {
-  newErrors.email = t('err_email') || 'Verplicht';
-} else if (
-  !/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(formData.email)
-) {
-  newErrors.email =
-    t('err_email_invalid') || 'Ongeldig e-mailadres';
-}
-
-if (!formData.phone.trim()) {
-  newErrors.phone = t('err_phone') || 'Verplicht';
-}
-
-if (!formData.street.trim()) {
-  newErrors.street = t('err_street') || 'Verplicht';
-}
-
-if (!formData.houseNumber.trim()) {
-  newErrors.houseNumber = t('err_house') || 'Verplicht';
-}
-
-if (!formData.postalCode.trim()) {
-  newErrors.postalCode = t('err_postal') || 'Verplicht';
-} else if (
-  formData.country === 'Nederland' &&
-  !/^[1-9][0-9]{3}\s?[a-zA-Z]{2}$/.test(formData.postalCode)
-) {
-  newErrors.postalCode =
-    t('err_postal_invalid') ||
-    'Ongeldige postcode (bijv. 1234 AB)';
-}
-
-if (!formData.city.trim()) {
-  newErrors.city = t('err_city') || 'Verplicht';
-}
-
-setErrors(newErrors);
-
-return Object.keys(newErrors).length === 0;
-
-};
-
-const handleChange = (
-e: React.ChangeEvent<
-HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
->
-) => {
-const { name, value } = e.target;
-
-setFormData((prev) => ({
-  ...prev,
-  [name]: value
-}));
-
-if (attemptedSubmit) {
-  setTimeout(() => {
-    validate();
-  }, 0);
-}
-
-};
-
-const createWhatsAppMessage = (
-order: {
-orderNumber: string;
-name: string;
-email: string;
-phone: string;
-address: string;
-postalCode: string;
-city: string;
-country: string;
-method: string;
-notes: string;
-total: number;
-}
-) => {
-let message = '';
-
-message += '🛒 *NIEUWE BESTELLING*\\n\\n';
-message += `*Bestelnummer:* #${order.orderNumber}\\n\\n`;
-
-message += '👤 *KLANTGEGEVENS*\\n';
-message += `Naam: ${order.name}\\n`;
-message += `E-mail: ${order.email}\\n`;
-message += `Telefoon: ${order.phone}\\n\\n`;
-
-message += '📍 *BEZORGADRES*\\n';
-message += `${order.address}\\n`;
-message += `${order.postalCode} ${order.city}\\n`;
-message += `${order.country}\\n\\n`;
-
-message += '🛍️ *BESTELLING*\\n';
-
-cart.forEach((item) => {
-  message += `${item.qty}x ${item.name}`;
-
-  if (item.size) {
-    message += ` (Maat: ${item.size})`;
-  }
-
-  message += ` — €${(item.price * item.qty).toFixed(2)}\\n`;
-});
-
-message += '\\n';
-message += `💰 *Totaal: €${order.total.toFixed(2)}*\\n`;
-message += `💳 *Betaalvoorkeur: ${
-  order.method === 'ideal' ? 'iDEAL' : 'PayPal'
-}*\\n`;
-
-if (order.notes.trim()) {
-  message += '\\n';
-  message += `📝 *Opmerking:*\\n${order.notes}\\n`;
-}
-
-message += '\\n';
-message += '⏳ *Status: WACHT OP BETALING*';
-
-return message;
-
-};
-
-const placeOrder = async () => {
-setAttemptedSubmit(true);
-
-if (!validate()) {
-  return;
-}
-
-setLoading(true);
-
-const generatedOrderNumber = String(
-  Math.floor(100000 + Math.random() * 900000)
-);
-
-const orderData = {
-  orderNumber: generatedOrderNumber,
-  name: `${formData.firstName} ${formData.lastName}`,
-  email: formData.email,
-  phone: formData.phone,
-  address: `${formData.street} ${formData.houseNumber}`,
-  postalCode: formData.postalCode,
-  city: formData.city,
-  country: formData.country,
-  method: formData.method,
-  notes: formData.notes,
-  cart,
-  subtotal,
-  shipCost,
-  total
-};
-
-try {
-  const response = await fetch('/api/order', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(orderData)
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    street: '',
+    houseNumber: '',
+    postalCode: '',
+    city: '',
+    country: 'Nederland',
+    method: 'ideal',
+    notes: ''
   });
 
-  if (!response.ok) {
-    throw new Error('Order request failed');
-  }
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderNumber, setOrderNumber] = useState('');
 
-  const message = createWhatsAppMessage(orderData);
+  const shoePairs = cart
+    .filter((c) => c.type === 'shoe')
+    .reduce((a, c) => a + c.qty, 0);
 
-  const waUrl =
-    `https://wa.me/31639741576?text=${encodeURIComponent(message)}`;
-
-  localStorage.setItem(
-    'lastOrder',
-    JSON.stringify({
-      orderNumber: generatedOrderNumber,
-      method: formData.method,
-      waUrl
-    })
+  const subtotal = cart.reduce(
+    (a, c) => a + c.price * c.qty,
+    0
   );
 
-  setOrderNumber(generatedOrderNumber);
-  setOrderPlaced(true);
-  clearCart();
+  const shipCost =
+    shoePairs >= FREE_FROM
+      ? 0
+      : getShippingCost(formData.country);
 
-  if ((window as any).showToast) {
-    (window as any).showToast(
-      'Bestelling aangemaakt!'
-    );
-  }
-} catch (error) {
-  console.error('Order error:', error);
+  const total = subtotal + shipCost;
 
-  if ((window as any).showToast) {
-    (window as any).showToast(
-      t('err_order') ||
-        'Er is een fout opgetreden bij het plaatsen van de bestelling.'
-    );
-  } else {
-    alert(
-      t('err_order') ||
-        'Er is een fout opgetreden bij het plaatsen van de bestelling.'
-    );
-  }
-} finally {
-  setLoading(false);
-}
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [orderPlaced]);
 
-};
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
 
-if (orderPlaced) {
-const savedOrder = localStorage.getItem('lastOrder');
+    if (!formData.firstName.trim()) {
+      newErrors.firstName =
+        t('err_first') || 'Verplicht';
+    }
 
-let waUrl = '';
+    if (!formData.lastName.trim()) {
+      newErrors.lastName =
+        t('err_last') || 'Verplicht';
+    }
 
-if (savedOrder) {
-  try {
-    const parsed = JSON.parse(savedOrder);
-    waUrl = parsed.waUrl || '';
-  } catch {
-    waUrl = '';
-  }
-}
+    if (!formData.email.trim()) {
+      newErrors.email =
+        t('err_email') || 'Verplicht';
+    } else if (
+      !/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(
+        formData.email
+      )
+    ) {
+      newErrors.email =
+        t('err_email_invalid') ||
+        'Ongeldig e-mailadres';
+    }
 
-return (
-  <section
-    style={{
-      paddingTop: '80px',
-      minHeight: '70vh'
-    }}
-  >
-    <div
-      className="wrap"
-      style={{
-        maxWidth: '760px',
-        textAlign: 'center'
-      }}
+    if (!formData.phone.trim()) {
+      newErrors.phone =
+        t('err_phone') || 'Verplicht';
+    }
+
+    if (!formData.street.trim()) {
+      newErrors.street =
+        t('err_street') || 'Verplicht';
+    }
+
+    if (!formData.houseNumber.trim()) {
+      newErrors.houseNumber =
+        t('err_house') || 'Verplicht';
+    }
+
+    if (!formData.postalCode.trim()) {
+      newErrors.postalCode =
+        t('err_postal') || 'Verplicht';
+    } else if (
+      formData.country === 'Nederland' &&
+      !/^[1-9][0-9]{3}\s?[a-zA-Z]{2}$/.test(
+        formData.postalCode
+      )
+    ) {
+      newErrors.postalCode =
+        t('err_postal_invalid') ||
+        'Ongeldige postcode (bijv. 1234 AB)';
+    }
+
+    if (!formData.city.trim()) {
+      newErrors.city =
+        t('err_city') || 'Verplicht';
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement |
+      HTMLSelectElement |
+      HTMLTextAreaElement
     >
-      <span className="eyebrow">
-        TripleThreadz
-      </span>
+  ) => {
+    const { name, value } = e.target;
 
-      <h1
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+
+    if (attemptedSubmit) {
+      setTimeout(() => {
+        validate();
+      }, 0);
+    }
+  };
+
+  const placeOrder = async () => {
+    setAttemptedSubmit(true);
+
+    if (!validate()) {
+      return;
+    }
+
+    if (cart.length === 0) {
+      return;
+    }
+
+    setLoading(true);
+
+    const generatedOrderNumber = String(
+      Math.floor(100000 + Math.random() * 900000)
+    );
+
+    const orderData = {
+      orderNumber: generatedOrderNumber,
+      name: `${formData.firstName} ${formData.lastName}`,
+      email: formData.email,
+      phone: formData.phone,
+      address: `${formData.street} ${formData.houseNumber}`,
+      postalCode: formData.postalCode,
+      city: formData.city,
+      country: formData.country,
+      method: formData.method,
+      notes: formData.notes,
+      cart,
+      subtotal,
+      shipCost,
+      total
+    };
+
+    try {
+      const response = await fetch('/api/order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          'Order request failed'
+        );
+      }
+
+      /*
+       * De server doet nu alles wat nodig is:
+       *
+       * 1. Bestelling opslaan
+       * 2. Status WAITING_FOR_PAYMENT
+       * 3. paymentStatus UNPAID
+       * 4. Twilio WhatsApp-bericht naar jou
+       *
+       * De klant hoeft dus NIET meer zelf
+       * een WhatsApp-bericht te versturen.
+       */
+
+      setOrderNumber(generatedOrderNumber);
+      setOrderPlaced(true);
+
+      clearCart();
+
+      if ((window as any).showToast) {
+        (window as any).showToast(
+          'Bestelling aangemaakt!'
+        );
+      }
+    } catch (error) {
+      console.error(
+        'Order error:',
+        error
+      );
+
+      if ((window as any).showToast) {
+        (window as any).showToast(
+          t('err_order') ||
+            'Er is een fout opgetreden bij het plaatsen van de bestelling.'
+        );
+      } else {
+        alert(
+          t('err_order') ||
+            'Er is een fout opgetreden bij het plaatsen van de bestelling.'
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /*
+   * BEDANKPAGINA
+   */
+  if (orderPlaced) {
+    return (
+      <section
         style={{
-          fontSize: 'clamp(40px, 6vw, 64px)',
-          fontFamily: 'Times New Roman',
-          marginTop: '12px'
-        }}
-      >
-        Bestelling wordt verwerkt
-      </h1>
-
-      <hr
-        className="stitch"
-        style={{
-          margin: '26px auto',
-          maxWidth: '100px'
-        }}
-      />
-
-      <p
-        style={{
-          fontSize: '18px',
-          lineHeight: '1.7',
-          marginBottom: '12px'
-        }}
-      >
-        Bedankt voor je bestelling!
-      </p>
-
-      <p
-        style={{
-          fontSize: '17px',
-          lineHeight: '1.7',
-          color: 'var(--fg-dim)',
-          marginBottom: '12px'
-        }}
-      >
-        Je bestelnummer is{' '}
-        <strong>#{orderNumber}</strong>.
-      </p>
-
-      <p
-        style={{
-          fontSize: '17px',
-          lineHeight: '1.7',
-          color: 'var(--fg-dim)',
-          marginBottom: '12px'
-        }}
-      >
-        We hebben je bestelling ontvangen.
-        <br />
-        Stuur nu je bestelling via WhatsApp naar ons.
-      </p>
-
-      <p
-        style={{
-          fontSize: '17px',
-          lineHeight: '1.7',
-          color: 'var(--fg-dim)',
-          marginBottom: '28px'
-        }}
-      >
-        Daarna ontvang je van ons een bericht met
-        het betaalverzoek. Je bestelling wordt verwerkt
-        zodra de betaling is ontvangen.
-      </p>
-
-      {waUrl && (
-        <a
-          href={waUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn btn-solid"
-          style={{
-            display: 'inline-block',
-            padding: '16px 30px',
-            fontSize: '17px',
-            background: '#000',
-            color: '#fff',
-            border: 'none',
-            textDecoration: 'none'
-          }}
-        >
-          Bestelling versturen via WhatsApp
-        </a>
-      )}
-
-      <p
-        style={{
-          fontSize: '13px',
-          color: 'var(--fg-dim)',
-          marginTop: '22px'
-        }}
-      >
-        WhatsApp opent met je bestelgegevens al ingevuld.
-        Controleer het bericht en druk daarna op verzenden.
-      </p>
-    </div>
-  </section>
-);
-
-}
-
-if (cart.length === 0) {
-return (
-<section
-style={{
-paddingTop: '56px',
-minHeight: '60vh'
-}}
->
-<div className="wrap">
-<h1
-style={{
-fontSize: 'clamp(40px, 6vw, 64px)'
-}}
->
-{t('cart_h')}
-</h1>
-
-      <hr
-        className="stitch"
-        style={{
-          margin: '26px 0'
-        }}
-      />
-
-      <div className="empty-state">
-        <p>
-          {t('cart_empty') ||
-            'Je winkelwagen is leeg.'}
-        </p>
-      </div>
-    </div>
-  </section>
-);
-
-}
-
-return (
-<section
-style={{
-paddingTop: '56px',
-minHeight: '60vh'
-}}
->
-<div className="wrap">
-<h1
-style={{
-fontSize: 'clamp(40px, 6vw, 64px)'
-}}
->
-{t('checkout_h')}
-</h1>
-
-    <hr
-      className="stitch"
-      style={{
-        margin: '26px 0'
-      }}
-    />
-
-    <div className="two-col">
-      <form
-        noValidate
-        onSubmit={(e) => {
-          e.preventDefault();
-          placeOrder();
+          paddingTop: '80px',
+          minHeight: '70vh'
         }}
       >
         <div
+          className="wrap"
           style={{
-            display: 'grid',
-            gridTemplateColumns:
-              '1fr 1fr',
-            gap: '16px'
+            maxWidth: '760px',
+            textAlign: 'center'
           }}
         >
-          <div className="form-field">
-            <label>
-              {t('form_firstname')}
-            </label>
+          <span className="eyebrow">
+            TripleThreadz
+          </span>
 
-            <input
-              name="firstName"
-              type="text"
-              value={formData.firstName}
-              onChange={handleChange}
-              style={
-                errors.firstName
-                  ? { borderColor: 'red' }
-                  : {}
-              }
-            />
+          <h1
+            style={{
+              fontSize:
+                'clamp(40px, 6vw, 64px)',
+              fontFamily:
+                'Times New Roman',
+              marginTop: '12px'
+            }}
+          >
+            Bedankt voor je bestelling!
+          </h1>
 
-            {errors.firstName && (
-              <span
-                style={{
-                  color: 'red',
-                  fontSize: '12px',
-                  marginTop: '4px',
-                  display: 'block'
-                }}
-              >
-                {errors.firstName}
-              </span>
-            )}
-          </div>
-
-          <div className="form-field">
-            <label>
-              {t('form_lastname')}
-            </label>
-
-            <input
-              name="lastName"
-              type="text"
-              value={formData.lastName}
-              onChange={handleChange}
-              style={
-                errors.lastName
-                  ? { borderColor: 'red' }
-                  : {}
-              }
-            />
-
-            {errors.lastName && (
-              <span
-                style={{
-                  color: 'red',
-                  fontSize: '12px',
-                  marginTop: '4px',
-                  display: 'block'
-                }}
-              >
-                {errors.lastName}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="form-field">
-          <label>
-            {t('form_email')}
-          </label>
-
-          <input
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            style={
-              errors.email
-                ? { borderColor: 'red' }
-                : {}
-            }
+          <hr
+            className="stitch"
+            style={{
+              margin: '26px auto',
+              maxWidth: '100px'
+            }}
           />
 
-          {errors.email && (
-            <span
+          <p
+            style={{
+              fontSize: '18px',
+              lineHeight: '1.7',
+              marginBottom: '12px'
+            }}
+          >
+            We hebben je bestelling
+            goed ontvangen.
+          </p>
+
+          <p
+            style={{
+              fontSize: '17px',
+              lineHeight: '1.7',
+              color: 'var(--fg-dim)',
+              marginBottom: '12px'
+            }}
+          >
+            Je bestelnummer is{' '}
+            <strong>
+              #{orderNumber}
+            </strong>.
+          </p>
+
+          <div
+            style={{
+              marginTop: '28px',
+              marginBottom: '28px',
+              padding: '24px',
+              border:
+                '1px solid var(--line-soft)',
+              background:
+                'var(--bg)'
+            }}
+          >
+            <p
               style={{
-                color: 'red',
-                fontSize: '12px',
-                marginTop: '4px',
-                display: 'block'
+                fontSize: '18px',
+                lineHeight: '1.7',
+                margin: 0
               }}
             >
-              {errors.email}
-            </span>
-          )}
-        </div>
+              Je bestelling wordt
+              verwerkt zodra de
+              betaling is ontvangen.
+            </p>
 
-        <div className="form-field">
-          <label>
-            {t('form_phone')}
-          </label>
-
-          <input
-            name="phone"
-            type="tel"
-            value={formData.phone}
-            onChange={handleChange}
-            style={
-              errors.phone
-                ? { borderColor: 'red' }
-                : {}
-            }
-          />
-
-          {errors.phone && (
-            <span
+            <p
               style={{
-                color: 'red',
-                fontSize: '12px',
-                marginTop: '4px',
-                display: 'block'
+                fontSize: '16px',
+                lineHeight: '1.7',
+                color:
+                  'var(--fg-dim)',
+                marginTop: '12px',
+                marginBottom: 0
               }}
             >
-              {errors.phone}
-            </span>
-          )}
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns:
-              '2fr 1fr',
-            gap: '16px'
-          }}
-        >
-          <div className="form-field">
-            <label>
-              {t('form_street')}
-            </label>
-
-            <input
-              name="street"
-              type="text"
-              value={formData.street}
-              onChange={handleChange}
-              style={
-                errors.street
-                  ? { borderColor: 'red' }
-                  : {}
-              }
-            />
-
-            {errors.street && (
-              <span
-                style={{
-                  color: 'red',
-                  fontSize: '12px',
-                  marginTop: '4px',
-                  display: 'block'
-                }}
-              >
-                {errors.street}
-              </span>
-            )}
+              We nemen contact met je
+              op met het
+              betaalverzoek.
+            </p>
           </div>
-
-          <div className="form-field">
-            <label>
-              {t('form_housenumber')}
-            </label>
-
-            <input
-              name="houseNumber"
-              type="text"
-              value={formData.houseNumber}
-              onChange={handleChange}
-              style={
-                errors.houseNumber
-                  ? { borderColor: 'red' }
-                  : {}
-              }
-            />
-
-            {errors.houseNumber && (
-              <span
-                style={{
-                  color: 'red',
-                  fontSize: '12px',
-                  marginTop: '4px',
-                  display: 'block'
-                }}
-              >
-                {errors.houseNumber}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns:
-              '1fr 2fr',
-            gap: '16px'
-          }}
-        >
-          <div className="form-field">
-            <label>
-              {t('form_postal')}
-            </label>
-
-            <input
-              name="postalCode"
-              type="text"
-              value={formData.postalCode}
-              onChange={handleChange}
-              style={
-                errors.postalCode
-                  ? { borderColor: 'red' }
-                  : {}
-              }
-            />
-
-            {errors.postalCode && (
-              <span
-                style={{
-                  color: 'red',
-                  fontSize: '12px',
-                  marginTop: '4px',
-                  display: 'block'
-                }}
-              >
-                {errors.postalCode}
-              </span>
-            )}
-          </div>
-
-          <div className="form-field">
-            <label>
-              {t('form_city')}
-            </label>
-
-            <input
-              name="city"
-              type="text"
-              value={formData.city}
-              onChange={handleChange}
-              style={
-                errors.city
-                  ? { borderColor: 'red' }
-                  : {}
-              }
-            />
-
-            {errors.city && (
-              <span
-                style={{
-                  color: 'red',
-                  fontSize: '12px',
-                  marginTop: '4px',
-                  display: 'block'
-                }}
-              >
-                {errors.city}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="form-field">
-          <label>
-            {t('ship_to')}
-          </label>
-
-          <select
-            name="country"
-            value={formData.country}
-            onChange={handleChange}
-          >
-            {COUNTRIES.map((country) => (
-              <option
-                key={country}
-                value={country}
-              >
-                {country}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div
-          style={{
-            marginTop: '24px',
-            padding: '16px',
-            border:
-              '1px solid var(--line-soft)'
-          }}
-        >
-          <strong
-            style={{
-              display: 'block',
-              marginBottom: '12px',
-              fontSize: '18px'
-            }}
-          >
-            {t('co_pay_method')}
-          </strong>
-
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              marginBottom: '10px'
-            }}
-          >
-            <input
-              type="radio"
-              name="method"
-              value="ideal"
-              checked={
-                formData.method === 'ideal'
-              }
-              onChange={handleChange}
-            />
-
-            <span>iDEAL</span>
-          </label>
-
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              marginBottom: '16px'
-            }}
-          >
-            <input
-              type="radio"
-              name="method"
-              value="paypal"
-              checked={
-                formData.method === 'paypal'
-              }
-              onChange={handleChange}
-            />
-
-            <span>PayPal</span>
-          </label>
 
           <p
             style={{
               fontSize: '14px',
-              color: 'var(--fg-dim)',
-              fontStyle: 'italic',
-              marginBottom: '20px'
+              lineHeight: '1.6',
+              color: 'var(--fg-dim)'
             }}
           >
-            Kies hier je gewenste
-            betaalmethode. Je betaalt nog niet
-            direct. Na het versturen van je
-            bestelling ontvang je via WhatsApp
-            een betaalverzoek.
+            Je hoeft niets meer te
+            doen op deze pagina.
           </p>
         </div>
+      </section>
+    );
+  }
 
-        <div
-          className="form-field"
-          style={{
-            marginTop: '20px'
-          }}
-        >
-          <label>
-            Opmerking (optioneel)
-          </label>
-
-          <textarea
-            name="notes"
-            value={formData.notes}
-            onChange={handleChange}
-            rows={3}
+  /*
+   * LEGE WINKELWAGEN
+   */
+  if (cart.length === 0) {
+    return (
+      <section
+        style={{
+          paddingTop: '56px',
+          minHeight: '60vh'
+        }}
+      >
+        <div className="wrap">
+          <h1
             style={{
-              width: '100%',
-              padding: '10px',
-              border:
-                '1px solid var(--line-soft)',
-              background: 'var(--bg)',
-              color: 'var(--fg)',
-              resize: 'vertical'
+              fontSize:
+                'clamp(40px, 6vw, 64px)'
+            }}
+          >
+            {t('cart_h')}
+          </h1>
+
+          <hr
+            className="stitch"
+            style={{
+              margin: '26px 0'
             }}
           />
-        </div>
 
-        {attemptedSubmit &&
-          Object.keys(errors).length > 0 && (
+          <div className="empty-state">
+            <p>
+              {t('cart_empty') ||
+                'Je winkelwagen is leeg.'}
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  /*
+   * CHECKOUT
+   */
+  return (
+    <section
+      style={{
+        paddingTop: '56px',
+        minHeight: '60vh'
+      }}
+    >
+      <div className="wrap">
+        <h1
+          style={{
+            fontSize:
+              'clamp(40px, 6vw, 64px)'
+          }}
+        >
+          {t('checkout_h')}
+        </h1>
+
+        <hr
+          className="stitch"
+          style={{
+            margin: '26px 0'
+          }}
+        />
+
+        <div className="two-col">
+          <form
+            noValidate
+            onSubmit={(e) => {
+              e.preventDefault();
+              placeOrder();
+            }}
+          >
             <div
               style={{
-                color: 'red',
-                fontSize: '14px',
-                marginTop: '16px'
+                display: 'grid',
+                gridTemplateColumns:
+                  '1fr 1fr',
+                gap: '16px'
               }}
             >
-              {t('co_err_fields') ||
-                'Controleer de ingevulde gegevens.'}
+              <div className="form-field">
+                <label>
+                  {t('form_firstname')}
+                </label>
+
+                <input
+                  name="firstName"
+                  type="text"
+                  value={
+                    formData.firstName
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  style={
+                    errors.firstName
+                      ? {
+                          borderColor:
+                            'red'
+                        }
+                      : {}
+                  }
+                />
+
+                {errors.firstName && (
+                  <span
+                    style={{
+                      color: 'red',
+                      fontSize: '12px',
+                      marginTop: '4px',
+                      display: 'block'
+                    }}
+                  >
+                    {
+                      errors.firstName
+                    }
+                  </span>
+                )}
+              </div>
+
+              <div className="form-field">
+                <label>
+                  {t('form_lastname')}
+                </label>
+
+                <input
+                  name="lastName"
+                  type="text"
+                  value={
+                    formData.lastName
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  style={
+                    errors.lastName
+                      ? {
+                          borderColor:
+                            'red'
+                        }
+                      : {}
+                  }
+                />
+
+                {errors.lastName && (
+                  <span
+                    style={{
+                      color: 'red',
+                      fontSize: '12px',
+                      marginTop: '4px',
+                      display: 'block'
+                    }}
+                  >
+                    {
+                      errors.lastName
+                    }
+                  </span>
+                )}
+              </div>
             </div>
-          )}
 
-        <button
-          type="submit"
-          className="btn btn-solid"
-          disabled={loading}
-          style={{
-            width: '100%',
-            marginTop: '20px',
-            background: '#000',
-            color: '#fff',
-            opacity: loading ? 0.5 : 1,
-            cursor: loading
-              ? 'not-allowed'
-              : 'pointer'
-          }}
-        >
-          {loading
-            ? 'Bestelling wordt geplaatst...'
-            : t('co_place_order') ||
-              'Bestelling plaatsen'}
-        </button>
-      </form>
+            <div className="form-field">
+              <label>
+                {t('form_email')}
+              </label>
 
-      <div>
-        <div
-          className="cart-summary"
-          style={{
-            marginTop: 0
-          }}
-        >
-          <div className="row">
-            <span>
-              {t('subtotal')}
-            </span>
+              <input
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                style={
+                  errors.email
+                    ? {
+                        borderColor: 'red'
+                      }
+                    : {}
+                }
+              />
 
-            <span className="mono">
-              {PRICE(subtotal)}
-            </span>
-          </div>
+              {errors.email && (
+                <span
+                  style={{
+                    color: 'red',
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'block'
+                  }}
+                >
+                  {errors.email}
+                </span>
+              )}
+            </div>
 
-          <div className="row">
-            <span>
-              {t('shipping')}
-            </span>
+            <div className="form-field">
+              <label>
+                {t('form_phone')}
+              </label>
 
-            <span className="mono">
-              {shipCost === 0
-                ? t('free')
-                : PRICE(shipCost)}
-            </span>
-          </div>
+              <input
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={handleChange}
+                style={
+                  errors.phone
+                    ? {
+                        borderColor: 'red'
+                      }
+                    : {}
+                }
+              />
 
-          <div className="row total">
-            <span>
-              {t('total')}
-            </span>
+              {errors.phone && (
+                <span
+                  style={{
+                    color: 'red',
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'block'
+                  }}
+                >
+                  {errors.phone}
+                </span>
+              )}
+            </div>
 
-            <span className="mono">
-              {PRICE(total)}
-            </span>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns:
+                  '2fr 1fr',
+                gap: '16px'
+              }}
+            >
+              <div className="form-field">
+                <label>
+                  {t('form_street')}
+                </label>
+
+                <input
+                  name="street"
+                  type="text"
+                  value={
+                    formData.street
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  style={
+                    errors.street
+                      ? {
+                          borderColor:
+                            'red'
+                        }
+                      : {}
+                  }
+                />
+
+                {errors.street && (
+                  <span
+                    style={{
+                      color: 'red',
+                      fontSize: '12px',
+                      marginTop: '4px',
+                      display: 'block'
+                    }}
+                  >
+                    {errors.street}
+                  </span>
+                )}
+              </div>
+
+              <div className="form-field">
+                <label>
+                  {t(
+                    'form_housenumber'
+                  )}
+                </label>
+
+                <input
+                  name="houseNumber"
+                  type="text"
+                  value={
+                    formData.houseNumber
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  style={
+                    errors.houseNumber
+                      ? {
+                          borderColor:
+                            'red'
+                        }
+                      : {}
+                  }
+                />
+
+                {errors.houseNumber && (
+                  <span
+                    style={{
+                      color: 'red',
+                      fontSize: '12px',
+                      marginTop: '4px',
+                      display: 'block'
+                    }}
+                  >
+                    {
+                      errors.houseNumber
+                    }
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns:
+                  '1fr 2fr',
+                gap: '16px'
+              }}
+            >
+              <div className="form-field">
+                <label>
+                  {t('form_postal')}
+                </label>
+
+                <input
+                  name="postalCode"
+                  type="text"
+                  value={
+                    formData.postalCode
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  style={
+                    errors.postalCode
+                      ? {
+                          borderColor:
+                            'red'
+                        }
+                      : {}
+                  }
+                />
+
+                {errors.postalCode && (
+                  <span
+                    style={{
+                      color: 'red',
+                      fontSize: '12px',
+                      marginTop: '4px',
+                      display: 'block'
+                    }}
+                  >
+                    {
+                      errors.postalCode
+                    }
+                  </span>
+                )}
+              </div>
+
+              <div className="form-field">
+                <label>
+                  {t('form_city')}
+                </label>
+
+                <input
+                  name="city"
+                  type="text"
+                  value={
+                    formData.city
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  style={
+                    errors.city
+                      ? {
+                          borderColor:
+                            'red'
+                        }
+                      : {}
+                  }
+                />
+
+                {errors.city && (
+                  <span
+                    style={{
+                      color: 'red',
+                      fontSize: '12px',
+                      marginTop: '4px',
+                      display: 'block'
+                    }}
+                  >
+                    {errors.city}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="form-field">
+              <label>
+                {t('ship_to')}
+              </label>
+
+              <select
+                name="country"
+                value={
+                  formData.country
+                }
+                onChange={
+                  handleChange
+                }
+              >
+                {COUNTRIES.map(
+                  (country) => (
+                    <option
+                      key={country}
+                      value={country}
+                    >
+                      {country}
+                    </option>
+                  )
+                )}
+              </select>
+            </div>
+
+            {/* BETAALMETHODE */}
+            <div
+              style={{
+                marginTop: '24px',
+                padding: '18px',
+                border:
+                  '1px solid var(--line-soft)'
+              }}
+            >
+              <strong
+                style={{
+                  display: 'block',
+                  marginBottom: '14px',
+                  fontSize: '18px'
+                }}
+              >
+                {t(
+                  'co_pay_method'
+                )}
+              </strong>
+
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  marginBottom: '10px'
+                }}
+              >
+                <input
+                  type="radio"
+                  name="method"
+                  value="ideal"
+                  checked={
+                    formData.method ===
+                    'ideal'
+                  }
+                  onChange={
+                    handleChange
+                  }
+                />
+
+                <span>
+                  iDEAL
+                </span>
+              </label>
+
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                <input
+                  type="radio"
+                  name="method"
+                  value="paypal"
+                  checked={
+                    formData.method ===
+                    'paypal'
+                  }
+                  onChange={
+                    handleChange
+                  }
+                />
+
+                <span>
+                  PayPal
+                </span>
+              </label>
+
+              <div
+                style={{
+                  marginTop: '16px',
+                  padding: '12px',
+                  background:
+                    'var(--line-soft)',
+                  fontSize: '14px',
+                  lineHeight: '1.6'
+                }}
+              >
+                Je betaalt nog niet
+                direct.
+
+                <br />
+
+                Na het plaatsen van je
+                bestelling ontvang je
+                een betaalverzoek.
+              </div>
+            </div>
+
+            <div
+              className="form-field"
+              style={{
+                marginTop: '20px'
+              }}
+            >
+              <label>
+                Opmerking (optioneel)
+              </label>
+
+              <textarea
+                name="notes"
+                value={
+                  formData.notes
+                }
+                onChange={
+                  handleChange
+                }
+                rows={3}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border:
+                    '1px solid var(--line-soft)',
+                  background:
+                    'var(--bg)',
+                  color:
+                    'var(--fg)',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+
+            {attemptedSubmit &&
+              Object.keys(errors)
+                .length > 0 && (
+                <div
+                  style={{
+                    color: 'red',
+                    fontSize: '14px',
+                    marginTop: '16px'
+                  }}
+                >
+                  {t(
+                    'co_err_fields'
+                  ) ||
+                    'Controleer de ingevulde gegevens.'}
+                </div>
+              )}
+
+            <button
+              type="submit"
+              className="btn btn-solid"
+              disabled={loading}
+              style={{
+                width: '100%',
+                marginTop: '20px',
+                background: '#000',
+                color: '#fff',
+                opacity: loading
+                  ? 0.5
+                  : 1,
+                cursor: loading
+                  ? 'not-allowed'
+                  : 'pointer'
+              }}
+            >
+              {loading
+                ? 'Bestelling wordt geplaatst...'
+                : t(
+                    'co_place_order'
+                  ) ||
+                  'Bestelling plaatsen'}
+            </button>
+          </form>
+
+          {/* BESTELOVERZICHT */}
+          <div>
+            <div
+              className="cart-summary"
+              style={{
+                marginTop: 0
+              }}
+            >
+              <div className="row">
+                <span>
+                  {t('subtotal')}
+                </span>
+
+                <span className="mono">
+                  {PRICE(subtotal)}
+                </span>
+              </div>
+
+              <div className="row">
+                <span>
+                  {t('shipping')}
+                </span>
+
+                <span className="mono">
+                  {shipCost === 0
+                    ? t('free')
+                    : PRICE(shipCost)}
+                </span>
+              </div>
+
+              <div className="row total">
+                <span>
+                  {t('total')}
+                </span>
+
+                <span className="mono">
+                  {PRICE(total)}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</section>
-
-);
+    </section>
+  );
 }
