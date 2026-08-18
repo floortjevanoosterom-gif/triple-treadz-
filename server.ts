@@ -1,4 +1,3 @@
-import twilio from "twilio";
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
@@ -50,36 +49,6 @@ async function startServer() {
         console.error("Email send failed", e);
       }
       
-      try {
-        if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_WHATSAPP_TO) {
-          const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-          
-          let msg = `🛒 *NIEUWE BESTELLING*\n\n`;
-          msg += `*Order:* #${order.orderNumber}\n\n`;
-          msg += `👤 *Klant*\nNaam: ${order.name}\nTelefoon: ${order.phone}\nE-mail: ${order.email}\n\n`;
-          msg += `📍 *Adres*\n${order.address}\n${order.postalCode} ${order.city}\n${order.country}\n\n`;
-          
-          msg += `🛍️ *Bestelling*\n`;
-          msg += order.cart.map((item) => `${item.qty}x ${item.name} ${item.size ? `(Maat: ${item.size})` : ''} — €${(item.price * item.qty).toFixed(2)}`).join('\n') + '\n\n';
-          
-          msg += `💰 *Totaal: €${order.total.toFixed(2)}*\n\n`;
-          
-          msg += `💳 *Gewenste betaalmethode: ${order.method === 'ideal' ? 'iDEAL' : 'PayPal'}*\n\n`;
-          msg += `🟠 *Status: WACHT OP BETALING*`;
-          
-          if (order.notes) {
-            msg += `\n\n📝 *Opmerking:* \n${order.notes}`;
-          }
-
-          await client.messages.create({ 
-            body: msg, 
-            from: 'whatsapp:' + (process.env.TWILIO_WHATSAPP_FROM || '+14155238886'), 
-            to: 'whatsapp:' + process.env.TWILIO_WHATSAPP_TO
-          });
-        }
-      } catch (e) {
-        console.error("Twilio WhatsApp Error:", e);
-      }
 
       res.json({ success: true, message: "Order placed" });
     } catch (error) {

@@ -91,10 +91,10 @@ export default async function handler(req: any, res: any) {
     message += `📲 Stuur de klant een Tikkie via: ${order.phone}`;
 
     await client.messages.create({
-      body: message,
-      from: `whatsapp:${TWILIO_WHATSAPP_FROM || "+14155238886"}`,
-      to: `whatsapp:${TWILIO_WHATSAPP_TO}`
-    });
+body: message,
+  from: `whatsapp:${TWILIO_WHATSAPP_FROM}`,
+  to: `whatsapp:${TWILIO_WHATSAPP_TO}`
+});
 
     return res.status(200).json({
       success: true,

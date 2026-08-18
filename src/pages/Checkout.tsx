@@ -177,26 +177,71 @@ export default function Checkout() {
       });
 
       if (!response.ok) {
+        throw new Error('Order request failed');
+      }
+
+      const whatsappNumber =
+        import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER;
+
+      if (!whatsappNumber) {
         throw new Error(
-          'Order request failed'
+          'WhatsApp Business-nummer ontbreekt'
         );
       }
 
-      /*
-       * De server doet nu alles wat nodig is:
-       *
-       * 1. Bestelling opslaan
-       * 2. Status WAITING_FOR_PAYMENT
-       * 3. paymentStatus UNPAID
-       * 4. Twilio WhatsApp-bericht naar jou
-       *
-       * De klant hoeft dus NIET meer zelf
-       * een WhatsApp-bericht te versturen.
-       */
+      let message = `🛒 NIEUWE BESTELLING\n\n`;
+      message += `Bestelnummer: #${generatedOrderNumber}\n\n`;
+
+      message += `👤 KLANT\n`;
+      message += `Naam: ${orderData.name}\n`;
+      message += `Telefoon: ${orderData.phone}\n`;
+      message += `E-mail: ${orderData.email}\n\n`;
+
+      message += `📍 VERZENDADRES\n`;
+      message += `${orderData.address}\n`;
+      message += `${orderData.postalCode} ${orderData.city}\n`;
+      message += `${orderData.country}\n\n`;
+
+      message += `🛍️ BESTELLING\n`;
+
+      orderData.cart.forEach((item) => {
+        message += `${item.qty}x ${item.name}`;
+
+        if (item.size) {
+          message += ` (Maat: ${item.size})`;
+        }
+
+        message += ` — €${(item.price * item.qty).toFixed(2)}\n`;
+      });
+
+      message += `\n💰 Subtotaal: €${orderData.subtotal.toFixed(2)}\n`;
+      message += `🚚 Verzending: ${
+        orderData.shipCost === 0
+          ? 'Gratis'
+          : `€${orderData.shipCost.toFixed(2)}`
+      }\n`;
+      message += `💰 TOTAAL: €${orderData.total.toFixed(2)}\n\n`;
+
+      message += `💳 Gewenste betaalmethode: ${
+        orderData.method === 'ideal'
+          ? 'iDEAL'
+          : 'PayPal'
+      }\n`;
+
+      if (orderData.notes) {
+        message += `\n📝 Opmerking:\n${orderData.notes}\n`;
+      }
+
+      message += `\nIk ontvang graag het betaalverzoek voor deze bestelling.`;
+
+      const whatsappUrl =
+        `https://wa.me/${whatsappNumber}?text=` +
+        encodeURIComponent(message);
+
+      window.open(whatsappUrl, '_blank');
 
       setOrderNumber(generatedOrderNumber);
       setOrderPlaced(true);
-
       clearCart();
 
       if ((window as any).showToast) {
@@ -205,10 +250,7 @@ export default function Checkout() {
         );
       }
     } catch (error) {
-      console.error(
-        'Order error:',
-        error
-      );
+      console.error('Order error:', error);
 
       if ((window as any).showToast) {
         (window as any).showToast(
