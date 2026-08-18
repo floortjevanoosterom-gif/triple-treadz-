@@ -169,17 +169,6 @@ export default function Checkout() {
     };
 
     try {
-      const response = await fetch('/api/order', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(orderData)
-      });
-
-      if (!response.ok) {
-        throw new Error('Order request failed');
-      }
 
       const whatsappNumber = '31639741576';
 
