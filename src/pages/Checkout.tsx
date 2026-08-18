@@ -26,6 +26,7 @@ export default function Checkout() {
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
+  const [whatsappOpened, setWhatsappOpened] = useState(false);
 
   const shoePairs = cart
     .filter((c) => c.type === 'shoe')
@@ -180,14 +181,7 @@ export default function Checkout() {
         throw new Error('Order request failed');
       }
 
-      const whatsappNumber =
-        import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER;
-
-      if (!whatsappNumber) {
-        throw new Error(
-          'WhatsApp Business-nummer ontbreekt'
-        );
-      }
+      const whatsappNumber = '31639741576';
 
       let message = `🛒 NIEUWE BESTELLING\n\n`;
       message += `Bestelnummer: #${generatedOrderNumber}\n\n`;
@@ -241,7 +235,7 @@ export default function Checkout() {
       window.open(whatsappUrl, '_blank');
 
       setOrderNumber(generatedOrderNumber);
-      setOrderPlaced(true);
+      setWhatsappOpened(true);
       clearCart();
 
       if ((window as any).showToast) {
@@ -267,6 +261,115 @@ export default function Checkout() {
       setLoading(false);
     }
   };
+
+  /*
+   * WHATSAPP BEVESTIGING
+   */
+  if (whatsappOpened && !orderPlaced) {
+    return (
+      <section
+        style={{
+          paddingTop: '80px',
+          minHeight: '70vh'
+        }}
+      >
+        <div
+          className="wrap"
+          style={{
+            maxWidth: '760px',
+            textAlign: 'center'
+          }}
+        >
+          <span className="eyebrow">
+            TripleThreadz
+          </span>
+
+          <h1
+            style={{
+              fontSize: 'clamp(36px, 6vw, 56px)',
+              fontFamily: 'Times New Roman',
+              marginTop: '12px'
+            }}
+          >
+            Bedankt voor je bestelling!
+          </h1>
+
+          <hr
+            className="stitch"
+            style={{
+              margin: '26px auto',
+              maxWidth: '100px'
+            }}
+          />
+
+          <p
+            style={{
+              fontSize: '18px',
+              lineHeight: '1.7'
+            }}
+          >
+            Je bestelling is goed ontvangen.
+          </p>
+
+          <p
+            style={{
+              fontSize: '17px',
+              lineHeight: '1.7',
+              color: 'var(--fg-dim)'
+            }}
+          >
+            Controleer het bericht in WhatsApp en druk op
+            <strong>Versturen</strong> om je bestelling naar ons te sturen.
+          </p>
+
+          <div
+            style={{
+              marginTop: '28px',
+              padding: '24px',
+              border: '1px solid var(--line-soft)',
+              background: 'var(--bg)'
+            }}
+          >
+            <p
+              style={{
+                fontSize: '17px',
+                lineHeight: '1.7',
+                margin: 0
+              }}
+            >
+              Na ontvangst van je WhatsApp-bericht sturen we je
+              het betaalverzoek voor je bestelling.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-solid"
+            onClick={() => setOrderPlaced(true)}
+            style={{
+              width: '100%',
+              marginTop: '24px',
+              background: '#000',
+              color: '#fff'
+            }}
+          >
+            Ik heb het WhatsApp-bericht verstuurd
+          </button>
+
+          <p
+            style={{
+              fontSize: '14px',
+              lineHeight: '1.6',
+              color: 'var(--fg-dim)',
+              marginTop: '16px'
+            }}
+          >
+            Bestelnummer: #{orderNumber}
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   /*
    * BEDANKPAGINA

@@ -5,7 +5,6 @@ import nodemailer from "nodemailer";
 import 'dotenv/config';
 import { getDb, saveDb } from "./db";
 
-// Initialize Stripe (Requires STRIPE_SECRET_KEY in .env)
 
 
 async function startServer() {
