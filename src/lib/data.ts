@@ -13,7 +13,7 @@ export const PRODUCTS = [
       nl: 'Custom Denim Adidas Superstar',
       en: 'Custom Denim Adidas Superstar'
     },
-    price: 146.99,
+    price: 144.95,
     limited: false,
     sizes: {
       '36': 1,
@@ -43,7 +43,7 @@ export const PRODUCTS = [
       nl: 'Custom Camo Adidas Superstar',
       en: 'Custom Camo Adidas Superstar'
     },
-    price: 171.99,
+    price: 159.95,
     limited: false,
     sizes: {
       '36': 1,
@@ -74,7 +74,7 @@ export const PRODUCTS = [
       nl: 'Custom Yellow Adidas Superstar',
       en: 'Custom Yellow Adidas Superstar'
     },
-    price: 146.99,
+    price: 144.95,
     limited: false,
     sizes: {
       '36': 1,
@@ -105,7 +105,7 @@ export const PRODUCTS = [
       nl: 'Custom Denim Yellow Adidas Superstar — Limited Edition',
       en: 'Custom Denim Yellow Adidas Superstar — Limited Edition'
     },
-    price: 171.99,
+    price: 169.95,
     limited: true,
     sizes: {
       '36': 2,
@@ -135,7 +135,7 @@ export const PRODUCTS = [
       nl: 'Custom Denim Black Red Adidas Superstar — Limited Edition',
       en: 'Custom Denim Black Red Adidas Superstar — Limited Edition'
     },
-    price: 171.99,
+    price: 169.95,
     limited: true,
     sizes: {
       '36': 0,
